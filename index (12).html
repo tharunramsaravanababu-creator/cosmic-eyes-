@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cosmic Museum · 200 Space Science Concepts</title>
+<style>
+*{box-sizing:border-box}
+:root{--a:#fd5;--r:#e5393e}
+body{margin:0;background:#0e0e11;color:#e8ecf5;font:15px/1.6 "Segoe UI",system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:#08080bee;border-bottom:1px solid #222;padding:12px 5vw;backdrop-filter:blur(6px)}
+.logo{letter-spacing:.25em;font-size:.85rem}
+#tabs{display:flex;gap:6px;overflow-x:auto;margin-top:8px;scrollbar-width:thin}
+#tabs button{flex:none;background:none;border:0;color:#9aa;padding:6px 12px;cursor:pointer;border-bottom:3px solid transparent;font:inherit;font-size:.85rem}
+#tabs button.on{color:#fff;border-color:var(--a)}
+.hero{padding:50px 5vw 10px}.hero h1{margin:0;font-size:clamp(2rem,5vw,3.4rem)}.hero p{color:#aab;max-width:640px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;padding:20px 5vw 60px}
+.card{background:#16161b;border:1px solid #262630;border-radius:8px;padding:16px;cursor:pointer;text-align:left;color:inherit;font:inherit;transition:.2s}
+.card:hover{border-color:var(--a);transform:translateY(-3px)}
+.card small{font:.72rem monospace;color:var(--a);letter-spacing:.15em}.card b{display:block;margin-top:6px;font-size:1.05rem}
+.empty{grid-column:1/-1;color:#9aa;padding:30px;border:1px dashed #333;border-radius:8px}
+#modal{position:fixed;inset:0;background:#0e0e11;overflow-y:auto;display:none;z-index:20}
+#modal.on{display:block}
+.wrap{max-width:820px;margin:0 auto;padding:24px 5vw 80px}
+.bar{display:flex;justify-content:space-between;gap:8px}
+.bar button,.sbtn{background:var(--r);color:#fff;border:0;border-radius:20px;padding:8px 16px;cursor:pointer;font:inherit}
+.tag{font:.75rem monospace;letter-spacing:.18em;color:var(--a);margin-top:26px}
+h2{font-size:2.2rem;margin:4px 0 16px}
+h3{font:.75rem monospace;letter-spacing:.15em;color:#9aa;text-transform:uppercase;margin:26px 0 4px}
+.box{background:#16161b;border-left:3px solid var(--r);padding:12px 16px;border-radius:4px}
+canvas{width:100%;background:#000;border-radius:8px;display:block;border:1px solid #262630}
+.ctl{display:flex;align-items:center;gap:12px;margin-top:10px}.ctl input{flex:1;accent-color:var(--r);height:26px}
+#cap{color:#cfd6e8;font-size:.9rem;min-height:24px;margin-top:6px}
+body{background:#05050a}
+#bg{position:fixed;inset:0;z-index:-1}
+header{background:rgba(5,5,10,.7)}
+#q{flex:1;min-width:200px;max-width:420px;background:#ffffff10;border:1px solid #333;border-radius:20px;padding:7px 16px;color:#fff;font:inherit;outline:none}
+#q:focus{border-color:var(--a);box-shadow:0 0 16px #fd54}
+.hero h1{background:linear-gradient(90deg,#fff,#fd5,#e5393e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card{position:relative;overflow:hidden;background:linear-gradient(160deg,#1a1a22cc,#0a0a10cc);transition:transform .12s,border-color .2s;min-height:96px}
+.card::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(190px circle at var(--mx,50%) var(--my,50%),#fd53,transparent 60%);opacity:0;transition:.2s}
+.card:hover::after{opacity:1}
+.pl{display:block;float:right;width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 30% 30%,hsl(var(--h),85%,72%),hsl(var(--h),70%,22%));box-shadow:0 0 14px hsla(var(--h),80%,55%,.5)}
+@keyframes fl{50%{transform:translateY(-5px)}}.card:hover .pl{animation:fl 1s infinite}
+#modal{background:rgba(5,5,10,.82);backdrop-filter:blur(14px)}
+@keyframes pop{from{opacity:0;transform:scale(.96)}}#modal.on .wrap{animation:pop .3s}
+canvas#cv{cursor:grab;touch-action:none}
+#cur{position:fixed;width:28px;height:28px;border:1px solid var(--a);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);z-index:50;transition:width .15s,height .15s,background .15s}
+#cur.big{width:54px;height:54px;background:#fd52}
+@media(pointer:coarse){#cur{display:none}}
+</style></head><body><canvas id="bg"></canvas><div id="cur"></div>
+<header><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><div class="logo">COSMIC MUSEUM</div><input id="q" placeholder="Search exhibits… try “Hubble” or “wave”"></div><div id="tabs"></div></header>
+<div class="hero"><h1>The Universe, in 200 Exhibits</h1><p>Pick an exhibit, read about the scientist and the idea, then drag the slider to play with a live model.</p><div class="tag" id="cnt" style="margin:0"></div></div>
+<div id="grid"></div>
+<div id="modal"><div class="wrap">
+<div class="bar"><button id="prev">← Prev</button><button id="close">Close ✕</button><button id="next">Next →</button></div>
+<div class="tag" id="mn"></div><h2 id="mt"></h2>
+<h3>The scientist and the idea</h3><div class="box" id="ms"></div>
+<h3>Mini-project</h3><div class="box" id="mp"></div>
+<h3>Try it yourself</h3><canvas id="cv" width="640" height="360"></canvas>
+<div class="ctl"><span id="sl"></span><input id="rng" type="range" min="0" max="1000" value="300"><button class="sbtn" id="auto">▶ Auto</button></div><div class="tag" style="margin:6px 0 0">DRAG ON THE MODEL · SCROLL WHEEL · MOVE THE MOUSE OVER IT</div><div id="cap"></div>
+</div></div>
+<script>
+// ===== DATA: [title, scientist & explanation, mini-project, model, slider label] =====
+// To add more concepts, add rows in the same format under the matching Part and use any model name from M below.
+const PARTS=["1 · Universe & Origin","2 · Gravity & Spacetime","3 · Stars","4 · Galaxies","5 · Solar System","6 · Exoplanets & Life","7 · Missions & Rockets","8 · Advanced Physics"];
+const D=[[
+["Big Bang Theory","Georges Lemaître proposed an expanding-universe model; it explains the universe's evolution from an extremely hot, dense early state.","Draw dots on a balloon and inflate it. Show how distances between dots increase as space expands.","expand","Inflate"],
+["Expanding Universe","Edwin Hubble provided key observational evidence that distant galaxies generally recede from us.","Make a balloon galaxy map and measure how the distances between dots increase.","expand","Expansion"],
+["Cosmic Inflation","Alan Guth developed a leading inflation model; it proposes extremely rapid expansion during the universe's earliest moments.","Draw a tiny patch on a balloon and inflate it rapidly to demonstrate sudden expansion.","inflate","Time"],
+["Steady State Theory","Fred Hoyle, Hermann Bondi, and Thomas Gold proposed a universe that maintains its large-scale appearance over time.","Create two paper universe maps representing different times and compare their large-scale appearance.","steady","Time"],
+["Cosmic Microwave Background (CMB)","Arno Penzias and Robert Wilson discovered the CMB, ancient radiation left over from the early universe.","Use a radio-noise recording or a simulated temperature map to explain the faint cosmic background.","temp","Cosmic time"],
+["Primordial Nucleosynthesis","George Gamow and collaborators helped develop the theory of light-element formation in the early universe.","Use coloured beads to represent early hydrogen and helium nuclei and show their approximate proportions.","beads","Cooling"],
+["Formation of the First Atoms","Modern cosmology explains how electrons joined nuclei as the universe cooled; this is called recombination.","Use balls for nuclei and smaller beads for electrons to model neutral atoms forming.","beads","Cooling"],
+["Cosmic Dark Ages","Cosmologists use this name for the era after neutral atoms formed but before the first stars illuminated the universe.","Build a dark-to-light timeline using a black sheet followed by paper stars and galaxies.","light","Time"],
+["First Stars","The first stars formed from early, mostly hydrogen-and-helium gas; many researchers study their formation.","Use cotton clouds and LED lights to model gas clouds collapsing into the first stars.","light","Collapse"],
+["Galaxy Formation","James Jeans developed important ideas about gravitational instability; galaxy formation is now explained using many observations and simulations.","Rotate a tray of tiny paper particles around a central point to model a simplified developing galaxy.","spin","Spin speed"],
+["Cosmic Web","Cosmologists helped advance our understanding of cosmic structure; galaxies form a vast network of filaments and voids.","Connect beads with threads to make a web of galaxy clusters and empty spaces.","web","Thread reach"],
+["Observable Universe","The observable universe is the region whose light has had time to reach us since the early universe.","Draw nested circles for Earth, the Solar System, the Milky Way, and the observable universe.","nested","Zoom out"],
+["Age of the Universe","Modern measurements, including those from the Planck mission, estimate the universe's age at about 13.8 billion years.","Create a scaled cosmic timeline from the Big Bang to the present.","time","Cosmic time"],
+["Hubble–Lemaître Law","Georges Lemaître and Edwin Hubble helped establish the relationship between galaxy distance and recession speed.","Plot fictional galaxy distances against recession speeds on a graph.","plot","Hubble constant"],
+["Olbers' Paradox","Heinrich Olbers highlighted why a simple eternal, infinite, uniformly star-filled universe would have a bright night sky.","Use paper stars at different distances to discuss why the real night sky is dark.","olbers","Distance seen"],
+["Cosmic Horizon","Cosmology describes horizons that limit which regions can be observed or can affect us.","Use a circle on a large sheet to mark an observer and a simplified observation boundary.","horizon","Light travel time"],
+["Multiverse Hypothesis","Hugh Everett proposed the many-worlds interpretation of quantum mechanics; other multiverse ideas arise from different theories and remain unconfirmed.","Create a branching decision-tree display representing hypothetical alternate outcomes.","branch","Branchings"],
+["Anthropic Principle","Brandon Carter introduced the modern formulation; it considers how the conditions we observe relate to the existence of observers.","Build a display comparing hypothetical universes with different conditions for star formation.","tune","Strength of gravity"],
+["Heat Death of the Universe","William Thomson (Lord Kelvin) helped develop the concept of heat death; it describes a possible far-future state with little usable energy.","Use a temperature timeline and a simple warm-to-cool demonstration to explain energy spreading out.","temp","Far future"],
+["Big Crunch","A proposed fate in which expansion reverses and the universe contracts; Richard Tolman studied cyclic cosmological models.","Make a reversible expansion-and-contraction animation using paper circles.","fate","Size of space"],
+["Big Rip","Robert Caldwell and collaborators developed a model in which extreme dark-energy effects could eventually tear apart cosmic structures.","Draw a sequence of expanding grids with increasing separation between points.","fate","Size of space"],
+["Cyclic Universe","Several scientists, including Richard Tolman and later Roger Penrose, developed different cyclic cosmological ideas.","Make a circular timeline linking expansion, a hypothetical turnaround, and another cycle.","cycle","Cycle phase"],
+["Ekpyrotic Universe","Justin Khoury, Burt Ovrut, Paul Steinhardt, and Neil Turok developed a model involving a possible collision of higher-dimensional branes.","Use two moving paper sheets to demonstrate a simplified collision-based universe model.","collide","Approach"],
+["Quantum Cosmology","John Wheeler and Bryce DeWitt helped develop approaches applying quantum physics to the universe as a whole.","Build a display contrasting classical universe models with hypothetical quantum-scale states.","branch","Possible states"],
+["Cosmic Topology","Cosmic topology studies the universe's global shape and possible ways space could connect to itself.","Make a paper-strip model of a looped space and compare it with an ordinary flat map.","wrap","Travel"]
+],[],[],[],[],[],[],[]];
+
+// ===== MODELS: each draws on canvas c for slider value t (0..1) and clock T (seconds). Returns caption. =====
+const W=640,H=360,cv=document.getElementById("cv"),c=cv.getContext("2d");
+const rnd=s=>()=>(s=(s*16807)%2147483647)/2147483647;
+const dot=(x,y,r,col)=>{c.fillStyle=col;c.beginPath();c.arc(x,y,r,0,7);c.fill()};
+const txt=(s,x,y,col="#cfd6e8",al="left")=>{c.fillStyle=col;c.font="14px sans-serif";c.textAlign=al;c.fillText(s,x,y)};
+const line=(a,b,x,y,col="#ffffff55")=>{c.strokeStyle=col;c.beginPath();c.moveTo(a,b);c.lineTo(x,y);c.stroke()};
+function grid(s,col){for(let i=-3;i<=3;i++)for(let j=-2;j<=2;j++){let x=W/2+i*40*s,y=H/2+j*40*s,n=ms.in&&Math.hypot(x-ms.x,y-ms.y)<60;dot(x,y,(i||j?4:6)+(n?5:0),i||j?col:"#fd5")}}
+const M={
+expand(t){const s=.4+t*1.6;grid(s,"#7cf");line(W/2,H/2,W/2+40*s,H/2,"#fd5");return"Distance between neighbouring dots: "+Math.round(40*s)+" units. Every dot moves away from every other."},
+inflate(t){const s=.2+Math.pow(t,3)*1.8;grid(s,"#f87");return"Size ×"+s.toFixed(2)+" — most of the growth happens in the final moments of the slider."},
+steady(t){const r=rnd(7);for(let i=0;i<45;i++){let x=r()*W*(1+t*.8)%W,y=r()*H;dot(x,y,3,"#7cf")}return"Galaxies spread apart, yet new matter appears so the density (45 galaxies) never changes."},
+temp(t,T){const K=2.725*Math.pow(1100,1-t);c.fillStyle="hsl("+(30*(1-t))+",90%,"+(30*(1-t)+4)+"%)";c.fillRect(0,0,W,H);c.strokeStyle="#fff";c.beginPath();for(let x=0;x<=W;x+=8){let y=30+(x/W)*300;x?c.lineTo(x,y):c.moveTo(x,y)}c.stroke();dot(t*W,30+t*300,7,"#fd5");txt("Temperature rises toward the left",12,22);return"Temperature ≈ "+K.toFixed(K<10?2:0)+" K (today: 2.725 K)"},
+beads(t,T){const r=rnd(3),bound=t>.5;for(let i=0;i<26;i++){let x=40+(i%9)*68,y=70+Math.floor(i/9)*100,he=i%13==5;dot(x,y,he?13:9,he?"#e5393e":"#fd5");let a=T*2+i;let d=bound?20:20+(1-t)*60*r()+Math.sin(T+i)*20*(1-t*.5);dot(x+Math.cos(a)*d,y+Math.sin(a)*d*(bound?1:.7),3,"#7cf")}return(bound?"Cool: electrons are captured — neutral atoms. ":"Hot: free electrons zip around. ")+"Gold = hydrogen, red = helium (about 12:1 by number, 75:25 by mass)."},
+light(t){const r=rnd(11);c.fillStyle="rgb("+t*30+","+t*30+","+t*50+")";c.fillRect(0,0,W,H);for(let i=0;i<90;i++){let x=r()*W,y=r()*H,z=r()*3,n=ms.in&&Math.hypot(x-ms.x,y-ms.y)<70;if(i/90<t||n){dot(x,y,2+z,"#fd5");c.globalAlpha=.2;dot(x,y,n?26:12,"#fd5");c.globalAlpha=1}}return t<.2?"Dark Ages: no stars yet.":t<.6?"First stars ignite in dense gas clouds.":"Stars gather into galaxies and light the universe."},
+spin(t,T){const r=rnd(5),cx=ms.in?ms.x:W/2,cy=ms.in?ms.y:H/2;dot(cx,cy,8,"#fd5");for(let i=0;i<220;i++){let d=15+r()*165,a=r()*6.28+d*.03+T*t*2.5*(60/(d+30)),arm=(i%2)*3.14;dot(cx+Math.cos(a+arm)*d*1.4,cy+Math.sin(a+arm)*d*.85,1.8,"#cde")}return"Move the mouse to carry the galaxy around. Inner particles orbit faster than outer ones, so the disk shears into spiral arms."},
+web(t){const r=rnd(9),p=[];for(let i=0;i<36;i++)p.push([r()*W,r()*H]);if(ms.in)p.push([ms.x,ms.y]);const L=30+t*150;p.forEach((a,i)=>p.forEach((b,j)=>{let d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(j>i&&d<L)line(a[0],a[1],b[0],b[1],"#7cf88")}));p.forEach(a=>dot(a[0],a[1],4,"#fd5"));return"Longer threads join clusters into filaments, leaving large empty voids."},
+nested(t){const n=["Earth","Solar System","Milky Way","Observable universe"],k=Math.min(3,Math.floor(t*4));n.forEach((s,i)=>{c.strokeStyle=i==k?"#fd5":"#fff4";c.lineWidth=i==k?3:1;c.beginPath();c.arc(W/2,H/2,25+i*50,0,7);c.stroke();txt(s,W/2+Math.sqrt(2)/2*(25+i*50)+4,H/2-Math.sqrt(2)/2*(25+i*50),i==k?"#fd5":"#889")});c.lineWidth=1;dot(W/2,H/2,3,"#7cf");return"Zoomed out to: "+n[k]+" (circles are not to scale)."},
+time(t){const E=[[0,"Big Bang"],[.0004,"First atoms"],[.2,"First stars"],[9.2,"Solar System forms"],[13.8,"Today"]],g=t*13.8;c.fillStyle="#333";c.fillRect(30,170,580,8);c.fillStyle="#e5393e";c.fillRect(30,170,580*t,8);E.forEach(e=>{let x=30+580*e[0]/13.8;dot(x,174,5,e[0]<=g?"#fd5":"#555");txt(e[1],x,e[0]==0?150:(e[0]==.0004?200:150+(e[0]>9?-20:40)),e[0]<=g?"#fff":"#666","center")});return"Time since the Big Bang: "+g.toFixed(2)+" billion years (linear scale)."},
+plot(t){const H0=50+t*50,r=rnd(4);c.strokeStyle="#fff4";line(50,320,50,20,"#888");line(50,320,610,320,"#888");txt("Distance →",520,342);txt("Speed ↑",8,18);line(50,320,50+540,320-540*H0/100*.55,"#fd5");for(let i=0;i<14;i++){let d=r()*.95+.05;dot(50+d*540,320-(d*540*H0/100*.55)*(.9+r()*.2),4,"#7cf")}return"Hubble constant ≈ "+Math.round(H0*1.4)+" km/s per Mpc (fictional galaxies). Steeper line = faster expansion."},
+olbers(t){const r=rnd(2),R=t*170;for(let i=0;i<400;i++){let a=r()*6.28,d=Math.sqrt(r())*170;if(d<R)dot(W/2+Math.cos(a)*d*1.6,H/2+Math.sin(a)*d,1.5,"#fd5")}dot(W/2,H/2,5,"#7cf");c.fillStyle="#333";c.fillRect(20,330,600,12);c.fillStyle="#fd5";c.fillRect(20,330,600*t,12);return"Sky brightness grows as you see farther. In an endless old universe it would be blinding; the real one is finite in age, so the sky is dark."},
+horizon(t,T){const R=t*220,ox=ms.in?ms.x:W/2,oy=ms.in?ms.y:H/2;c.strokeStyle="#fd5";c.beginPath();c.arc(ox,oy,R,0,7);c.stroke();const r=rnd(8);for(let i=0;i<90;i++){let x=r()*W,y=r()*H;dot(x,y,3,Math.hypot(x-ox,y-oy)<R?"#7cf":"#444")}dot(ox,oy,6,"#e5393e");return"Move the mouse to move the observer. Only objects inside the gold circle (blue) have had time to send us light."},
+branch(t){const n=Math.round(t*5);(function f(x,y,len,a,d){if(d>n)return;let x2=x+Math.cos(a)*len,y2=y+Math.sin(a)*len;line(x,y,x2,y2,"#7cf");dot(x2,y2,3,"#fd5");f(x2,y2,len*.72,a-.45,d+1);f(x2,y2,len*.72,a+.45,d+1)})(W/2,H-20,70,-Math.PI/2+(ms.in?(ms.x-W/2)/W*.7:0),1);return n+" splits → "+Math.pow(2,n)+" hypothetical outcomes (a thought experiment, unconfirmed)."},
+tune(t){const y=Math.exp(-Math.pow((t-.5)/.14,2));c.fillStyle="#333";c.fillRect(260,40,120,280);c.fillStyle=y>.5?"#fd5":"#e5393e";c.fillRect(260,320-280*y,120,280*y);txt("Star formation",320,30,"#cfd6e8","center");return y>.5?"Just right: stars form and live long enough for planets and observers.":t<.5?"Gravity too weak: gas never clumps into stars.":"Gravity too strong: stars burn out very fast."},
+fate(t){const s=.3+t*1.9;grid(s,s>1.6?"#e5393e":"#7cf");return s<.8?"Big Crunch: space contracts and points squeeze together.":s<1.2?"Roughly today's size.":s<1.7?"Space is expanding faster and faster.":"Big Rip: separation grows so fast even structures are torn apart."},
+cycle(t){c.strokeStyle="#667";c.lineWidth=6;c.beginPath();c.arc(W/2,H/2,110,0,7);c.stroke();c.lineWidth=1;const a=t*6.28-1.57;dot(W/2+Math.cos(a)*110,H/2+Math.sin(a)*110,10,"#fd5");["Expansion","Slow-down","Turnaround","New bang"].forEach((s,i)=>txt(s,W/2+Math.cos(i*1.57-.8)*150,H/2+Math.sin(i*1.57-.8)*135,"#aab","center"));return"Phase: "+["Expansion","Slow-down","Turnaround","New Bang"][Math.min(3,Math.floor(t*4))]},
+collide(t){const x=130+t*60,hit=t>.97;c.fillStyle="#7cf";c.fillRect(x-20,60,20,240);c.fillStyle="#e5393e";c.fillRect(W-x,60,20,240);if(hit){const r=rnd(6);for(let i=0;i<80;i++)dot(W/2+(r()-.5)*160,H/2+(r()-.5)*200,2,"#fd5")}return hit?"Collision! Energy released here would seed a hot Big Bang.":"Two sheets (branes) drift together in a higher dimension."},
+wrap(t){c.strokeStyle="#fff4";c.strokeRect(120,80,400,200);const x=120+(t*3*400)%400;dot(x,180,8,"#fd5");dot(x-400,180,8,"#fd544");dot(x+400,180,8,"#fd544");txt("Leave the right edge → re-enter on the left",W/2,300,"#aab","center");return"In a looped space you can travel straight and return to your start."}
+};
+// ===== APP =====
+const $=id=>document.getElementById(id);let part=0,cur=null,list=[];
+PARTS.forEach((p,i)=>{let b=document.createElement("button");b.textContent=p;b.onclick=()=>{part=i;$("q").value="";render()};$("tabs").appendChild(b)});
+function offset(p){let n=0;for(let i=0;i<p;i++)n+=D[i].length;return n}
+function render(){const q=$("q").value.trim().toLowerCase();[...$("tabs").children].forEach((b,i)=>b.classList.toggle("on",i==part&&!q));const g=$("grid");g.innerHTML="";let n=0;
+D.forEach((P,p)=>{if(!q&&p!=part)return;P.forEach((e,i)=>{if(q&&!(e[0]+e[1]).toLowerCase().includes(q))return;n++;const b=document.createElement("button"),no=offset(p)+i+1;b.className="card";b.innerHTML='<i class="pl" style="--h:'+(no*47%360)+'"></i><small>EXHIBIT '+no+'</small><b></b>';b.lastChild.textContent=e[0];b.onclick=()=>open(p,i);b.onmousemove=ev=>{const r=b.getBoundingClientRect(),x=(ev.clientX-r.left)/r.width,y=(ev.clientY-r.top)/r.height;b.style.setProperty("--mx",x*100+"%");b.style.setProperty("--my",y*100+"%");b.style.transform="perspective(600px) rotateY("+(x-.5)*14+"deg) rotateX("+(.5-y)*14+"deg) translateZ(6px)"};b.onmouseleave=()=>b.style.transform="";g.appendChild(b)})});
+if(!n)g.innerHTML='<div class="empty">'+(q?"No exhibit matches “"+q+"”.":"This hall is being prepared — its exhibits will use the same format as Part 1.")+"</div>";$("cnt").textContent=D.flat().length+" OF 200 EXHIBITS OPEN"}
+let raf;function open(p,i){part=p;cur=i;const e=D[p][i];$("mn").textContent="EXHIBIT "+(offset(part)+i+1)+" · "+PARTS[part];$("mt").textContent=e[0];$("ms").textContent=e[1];$("mp").textContent=e[2];$("sl").textContent=e[4];$("modal").classList.add("on");$("modal").scrollTop=0;cancelAnimationFrame(raf);const loop=T=>{c.clearRect(0,0,W,H);c.fillStyle="#000";c.fillRect(0,0,W,H);c.lineWidth=1;if(auto&&!ms.d)setT((Math.sin(T/1800)+1)/2);$("cap").textContent=M[e[3]]($("rng").value/1000,T/1000)||"";if(ms.in){c.strokeStyle="#fd5";c.beginPath();c.arc(ms.x,ms.y,10,0,7);c.stroke()}raf=requestAnimationFrame(loop)};raf=requestAnimationFrame(loop)}
+function step(d){let n=cur+d;if(n>=0&&n<D[part].length)open(part,n)}
+$("close").onclick=()=>{$("modal").classList.remove("on");cancelAnimationFrame(raf)};$("prev").onclick=()=>step(-1);$("next").onclick=()=>step(1);
+addEventListener("keydown",k=>{if(!$("modal").classList.contains("on"))return;if(k.key=="Escape")$("close").click();if(k.key=="ArrowLeft")step(-1);if(k.key=="ArrowRight")step(1)});
+const ms={x:W/2,y:H/2,d:0,in:0};let auto=0;
+function setT(v){$("rng").value=Math.max(0,Math.min(1,v))*1000}
+function pos(e){const r=cv.getBoundingClientRect();ms.x=(e.clientX-r.left)*W/r.width;ms.y=(e.clientY-r.top)*H/r.height}
+cv.onpointermove=e=>{pos(e);ms.in=1;if(ms.d)setT(ms.x/W)};
+cv.onpointerdown=e=>{pos(e);ms.d=1;cv.setPointerCapture(e.pointerId);cv.style.cursor="grabbing";setT(ms.x/W)};
+cv.onpointerup=()=>{ms.d=0;cv.style.cursor="grab"};cv.onpointerleave=()=>{if(!ms.d)ms.in=0};
+cv.onwheel=e=>{e.preventDefault();setT(+$("rng").value/1000-e.deltaY/2000)};
+$("auto").onclick=()=>{auto=!auto;$("auto").textContent=auto?"⏸ Auto":"▶ Auto"};
+$("q").oninput=render;
+const bg=$("bg"),bx=bg.getContext("2d"),S=[],pm={x:0,y:0};
+for(let i=0;i<170;i++)S.push([Math.random(),Math.random(),Math.random()*1.6+.3]);
+const fit=()=>{bg.width=innerWidth;bg.height=innerHeight};fit();addEventListener("resize",fit);
+addEventListener("pointermove",e=>{pm.x=e.clientX/innerWidth-.5;pm.y=e.clientY/innerHeight-.5;$("cur").style.left=e.clientX+"px";$("cur").style.top=e.clientY+"px"});
+document.addEventListener("pointerover",e=>$("cur").classList.toggle("big",!!e.target.closest("button,canvas,input")));
+(function sky(){bx.clearRect(0,0,bg.width,bg.height);S.forEach(s=>{const x=((s[0]*bg.width-pm.x*s[2]*50)%bg.width+bg.width)%bg.width,y=s[1]*bg.height-pm.y*s[2]*50;bx.fillStyle="rgba(255,255,255,"+(.3+s[2]/3)+")";bx.fillRect(x,y,s[2],s[2]);s[0]=(s[0]+s[2]*2e-5)%1});requestAnimationFrame(sky)})();
+render();
+</script></body></html>
